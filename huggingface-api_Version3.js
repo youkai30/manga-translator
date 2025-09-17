@@ -74,9 +74,39 @@ async function translateWithLLM(text, sourceLang, hfKey) {
     }
 }
 
-async function translateWithGemini(text, gemKey) {
-    // This is a placeholder function.
-    // A real implementation would call the Gemini API here.
-    console.warn("Gemini translation is not implemented. Returning original text.");
-    return Promise.resolve(`${text} [ترجمة Gemini (وهمية)]`);
+async function translateWithGemini(text, sourceLang, gemKey) {
+    const config = getApiKeys();
+    const model = config.gemini.model;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemKey}`;
+
+    const prompt = `Translate the following text from ${sourceLang} to Arabic. Return only the translated text, without any introductory phrases. Text: "${text}"`;
+
+    const requestBody = {
+        contents: [{
+            parts: [{ "text": prompt }]
+        }]
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Gemini API Error:", errorBody);
+        throw new Error(`فشل ترجمة Gemini: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    try {
+        return result.candidates[0].content.parts[0].text.trim();
+    } catch (e) {
+        console.error("Unexpected Gemini API response format:", result);
+        throw new Error("تنسيق استجابة Gemini API غير متوقع");
+    }
 }

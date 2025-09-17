@@ -88,6 +88,35 @@
 
             window.fetch = originalFetch;
         });
+
+        runTest('translateWithGemini should call translation API and return text', async () => {
+            const originalFetch = window.fetch;
+            window.fetch = async (url, options) => {
+                const model = API_CONFIG.gemini.model;
+                if (url.includes(model)) {
+                    const mockApiResponse = {
+                        candidates: [{
+                            content: {
+                                parts: [{ text: 'مرحباً' }]
+                            }
+                        }]
+                    };
+                    return {
+                        ok: true,
+                        json: async () => mockApiResponse
+                    };
+                }
+                return originalFetch(url, options);
+            };
+
+            const result = await translateWithGemini('Hello', 'en', 'dummy_key');
+
+            if (result !== 'مرحباً') {
+                throw new Error(`Expected translation to be 'مرحباً', but got '${result}'`);
+            }
+
+            window.fetch = originalFetch;
+        });
     </script>
 </body>
 </html>
