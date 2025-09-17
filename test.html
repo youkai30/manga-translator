@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test for Manga Translator</title>
+</head>
+<body>
+    <h1>Test for Manga Translator</h1>
+    <div id="test-results"></div>
+
+    <script src="config_keys.js"></script>
+    <script src="huggingface-api_Version3.js"></script>
+
+    <script>
+        const resultsDiv = document.getElementById('test-results');
+
+        function runTest(name, testFn) {
+            try {
+                testFn();
+                resultsDiv.innerHTML += `<p style="color: green;">[PASS] ${name}</p>`;
+            } catch (e) {
+                resultsDiv.innerHTML += `<p style="color: red;">[FAIL] ${name}: ${e.message}</p>`;
+                console.error(e);
+            }
+        }
+
+        runTest('extractTextWithNanonetsOCR should process API response correctly', async () => {
+            // Mock window.fetch
+            const originalFetch = window.fetch;
+            window.fetch = async (url, options) => {
+                // Check if the call is for the OCR model
+                if (url.includes('nanonets/Nanonets-OCR-s')) {
+                    const mockApiResponse = [
+                        {
+                            label: 'Hello',
+                            box: { xmin: 10, ymin: 10, xmax: 50, ymax: 30 }
+                        },
+                        {
+                            label: 'World',
+                            box: { xmin: 60, ymin: 10, xmax: 110, ymax: 30 }
+                        }
+                    ];
+                    return {
+                        ok: true,
+                        json: async () => mockApiResponse
+                    };
+                }
+                return originalFetch(url, options);
+            };
+
+            const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+            const result = await extractTextWithNanonetsOCR(sampleBase64, 'dummy_key');
+
+            // Assertions
+            if (!Array.isArray(result) || result.length !== 2) {
+                throw new Error(`Expected result to be an array of length 2, but got ${JSON.stringify(result)}`);
+            }
+            if (result[0].originalText !== 'Hello' || result[1].originalText !== 'World') {
+                throw new Error(`Expected originalText to be 'Hello' and 'World', but got ${result.map(r => r.originalText)}`);
+            }
+            if (result[0].boundingBox.x_min !== 10) {
+                throw new Error(`Expected boundingBox.x_min to be 10, but got ${result[0].boundingBox.x_min}`);
+            }
+
+            // Restore fetch
+            window.fetch = originalFetch;
+        });
+
+        runTest('translateWithLLM should call translation API and return text', async () => {
+            const originalFetch = window.fetch;
+            window.fetch = async (url, options) => {
+                const model = API_CONFIG.huggingface.translationModel;
+                if (url.includes(model)) {
+                    const mockApiResponse = [{ generated_text: 'أهلاً' }];
+                    return {
+                        ok: true,
+                        json: async () => mockApiResponse
+                    };
+                }
+                return originalFetch(url, options);
+            };
+
+            const result = await translateWithLLM('Hello', 'en', 'dummy_key');
+
+            if (result !== 'أهلاً') {
+                throw new Error(`Expected translation to be 'أهلاً', but got '${result}'`);
+            }
+
+            window.fetch = originalFetch;
+        });
+    </script>
+</body>
+</html>

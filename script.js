@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const dropArea     = document.getElementById("drop-area");
     const processBtn   = document.getElementById("process-btn");
     const resetBtn     = document.getElementById("reset-btn");
-    const downloadBtn  = document.getElementById("download-btn");
     const origC        = document.getElementById("original-container");
     const transC       = document.getElementById("translated-container");
     const hfKeyInput   = document.getElementById("hf-key");
@@ -66,36 +65,53 @@ document.addEventListener("DOMContentLoaded", function() {
         const useGem = gemKey.length > 0;
         const lang   = srcLangSel.value;
 
-        if (!hfKey && !useGem) return showError("ادخل مفتاحاً واحداً على الأقل (Hugging Face أو Gemini)");
+        // The Hugging Face key is mandatory for the OCR step (Nanonets OCR).
+        // Translation can use Gemini if a key is provided, but OCR requires HF.
+        if (!hfKey) return showError("مفتاح Hugging Face مطلوب لإتمام العملية");
         if (!images.length) return showError("حمّل صورة أولاً");
 
         processBtn.disabled = resetBtn.disabled = true;
+        transC.innerHTML = ""; // Clear previous results
+
         try {
-            updateProgress(5, "جاري بدء المعالجة...");
-            const b64 = await toBase64(images[0]);
+            for (let i = 0; i < images.length; i++) {
+                const image = images[i];
+                const progressStart = (i / images.length) * 100;
+                const progressEnd = ((i + 1) / images.length) * 100;
 
-            const textBlocks = await extractTextWithEasyOCR(b64, hfKey || gemKey);
-            showMessage(`اُكتشف ${textBlocks.length} فقعة نص`, "success");
-            if (!textBlocks.length) throw new Error("لا نصوص للترجمة");
+                updateProgress(progressStart, `جاري معالجة الصورة ${i + 1}/${images.length}...`);
 
-            const originals   = textBlocks.map(b => b.originalText);
-            const translated = [];
+                const b64 = await toBase64(image);
 
-            for (let i=0; i<originals.length; i++) {
-                updateProgress(60 + (i * 30 / originals.length), `ترجمة ${i+1}/${originals.length}...`);
-                if (useGem) {
-                    translated.push(await translateWithGemini(originals[i], gemKey));
-                } else {
-                    translated.push(await translateWithLLM(originals[i], lang, hfKey));
+                const textBlocks = await extractTextWithNanonetsOCR(b64, hfKey);
+                if (!textBlocks.length) {
+                    showError(`لم يتم العثور على نص في الصورة ${i + 1}`);
+                    continue; // Skip to next image
                 }
+
+                showMessage(`اُكتشف ${textBlocks.length} فقاعة نص في الصورة ${i + 1}`, "success");
+
+                const originals   = textBlocks.map(b => b.originalText);
+                const translated = [];
+
+                for (let j = 0; j < originals.length; j++) {
+                    const singleProgress = (j / originals.length) * (progressEnd - progressStart - 10);
+                    updateProgress(progressStart + 5 + singleProgress, `ترجمة ${j + 1}/${originals.length} من الصورة ${i + 1}...`);
+                    if (useGem && gemKey) {
+                        translated.push(await translateWithGemini(originals[j], gemKey));
+                    } else {
+                        translated.push(await translateWithLLM(originals[j], lang, hfKey));
+                    }
+                }
+
+                updateProgress(progressEnd - 5, `إنشاء الصورة النهائية ${i + 1}...`);
+                const outImg = await drawTextOnImage(b64, textBlocks, translated);
+                appendTranslatedImage(outImg, i);
             }
 
-            updateProgress(95, "إنشاء الصورة النهائية...");
-            const outImg = await drawTextOnImage(b64, textBlocks, translated);
-            showTranslatedImage(outImg);
-
             updateProgress(100, "اكتملت الترجمة!");
-            showMessage("تمّت عملية الترجمة بنجاح 🎉", "success");
+            showMessage(`تمّت معالجة ${images.length} صور بنجاح 🎉`, "success");
+
         } catch (e) {
             console.error(e);
             showError(`خطأ: ${e.message}`);
@@ -116,22 +132,29 @@ document.addEventListener("DOMContentLoaded", function() {
         processBtn.disabled = true;
     });
 
-    function showTranslatedImage(data) {
-        transC.innerHTML = "";
+    function appendTranslatedImage(data, index) {
+        const container = document.createElement('div');
+        container.className = 'translated-image-item';
+
         const img = document.createElement("img");
         img.src = data;
         img.style.maxWidth = "100%";
         img.style.borderRadius = "8px";
         img.style.boxShadow = "0 5px 15px rgba(0,0,0,0.1)";
-        transC.appendChild(img);
 
-        downloadBtn.style.display = "block";
-        downloadBtn.onclick = () => {
+        const btn = document.createElement('button');
+        btn.textContent = `⬇️ تحميل الصورة المترجمة ${index + 1}`;
+        btn.className = 'download-btn';
+        btn.onclick = () => {
             const a = document.createElement("a");
-            a.download = `manga-translated-${Date.now()}.jpg`;
+            a.download = `manga-translated-${Date.now()}-${index + 1}.jpg`;
             a.href = data;
             a.click();
         };
+
+        container.appendChild(img);
+        container.appendChild(btn);
+        transC.appendChild(container);
     }
 
     function toBase64(file) {

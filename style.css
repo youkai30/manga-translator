@@ -171,6 +171,19 @@ body {
     font-weight: 600;
     transition: all 0.3s ease;
     width: 100%;
+    margin-top: 15px;
+}
+
+#download-btn {
+    display: none; /* Hide original button */
+}
+
+.translated-image-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .download-btn:hover {
