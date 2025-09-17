@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترجم المانجا بالذكاء الاصطناعي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🤖 مترجم المانجا بالذكاء الاصطناعي</h1>
+        <p class="subtitle">استخرج النص من صور المانجا، انقّه، ثم اترجمه إلى العربية</p>
+    </header>
+    
+    <div class="container">
+        <div id="drop-area" class="upload-section">
+            <p>اسحب وأفلت صور المانجا هنا — أو اضغط لاختيار ملف</p>
+            <input id="file-upload" type="file" accept="image/*" multiple class="file-input">
+        </div>
+        
+        <div class="api-keys">
+            <h3>🔑 إعدادات API</h3>
+            <div class="input-group">
+                <label for="hf-key">مفتاح Hugging Face</label>
+                <input type="text" id="hf-key" placeholder="hf_...">
+                <small>احصل على مفتاح من: <a href="https://huggingface.co/settings/tokens" target="_blank">Hugging Face Tokens</a></small>
+            </div>
+            <div class="input-group">
+                <label for="gemini-key">مفتاح Gemini API</label>
+                <input type="text" id="gemini-key" placeholder="أدخل مفتاح Gemini API الخاص بك">
+                <small>احصل على مفتاح من: <a href="https://makersuite.google.com/" target="_blank">Gemini API Keys</a></small>
+            </div>
+            <div class="input-group">
+                <label for="source-lang">لغة النص الأصلي</label>
+                <select id="source-lang">
+                    <option value="en">الإنجليزية</option>
+                    <option value="ja">اليابانية</option>
+                    <option value="zh">الصينية</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="process-btn" class="process-btn" disabled>ابدأ الترجمة</button>
+            <button id="reset-btn" class="process-btn" style="background: #e74c3c; margin-right: 10px;">🗑️ مسح الكل</button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+        </div>
+        
+        <div class="status" id="status">في انتظار تحميل الصورة...</div>
+        
+        <div class="results">
+            <div class="result-card">
+                <h3>الصورة الأصلية</h3>
+                <div class="image-container" id="original-container">
+                    <div class="placeholder">سيتم عرض الصورة الأصلية هنا</div>
+                </div>
+            </div>
+            <div class="result-card">
+                <h3>الصورة المترجمة</h3>
+                <div class="image-container" id="translated-container">
+                    <div class="placeholder">سيتم عرض الصورة المترجمة هنا</div>
+                </div>
+                <button id="download-btn" class="download-btn" style="display: none; margin-top: 15px;">
+                    ⬇️ تحميل الصورة المترجمة
+                </button>
+            </div>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+    
+    <footer>
+        <p>تم التطوير باستخدام EasyOCR و Qwen LLM و Gemini API | ترخيص MIT</p>
+    </footer>
+
+    <script src="config/keys.js"></script>
+    <script src="huggingface-api.js"></script>
+    <script src="api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
