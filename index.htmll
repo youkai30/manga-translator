@@ -16,6 +16,7 @@
     <div class="container">
         <div id="drop-area" class="upload-section">
             <p>اسحب وأفلت صور المانجا هنا — أو اضغط لاختيار ملف</p>
+            <div id="preview-container"></div>
             <input id="file-upload" type="file" accept="image/*" multiple class="file-input">
         </div>
         
@@ -53,22 +54,8 @@
         
         <div class="status" id="status">في انتظار تحميل الصورة...</div>
         
-        <div class="results">
-            <div class="result-card">
-                <h3>الصورة الأصلية</h3>
-                <div class="image-container" id="original-container">
-                    <div class="placeholder">سيتم عرض الصورة الأصلية هنا</div>
-                </div>
-            </div>
-            <div class="result-card">
-                <h3>الصورة المترجمة</h3>
-                <div class="image-container" id="translated-container">
-                    <div class="placeholder">سيتم عرض الصورة المترجمة هنا</div>
-                </div>
-                <button id="download-btn" class="download-btn" style="display: none; margin-top: 15px;">
-                    ⬇️ تحميل الصورة المترجمة
-                </button>
-            </div>
+        <div id="results-container">
+            <!-- Result pairs will be injected here by script.js -->
         </div>
         
         <div id="message"></div>
